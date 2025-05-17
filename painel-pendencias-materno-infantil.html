@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Pendências - Linha de Cuidado Materno-Infantil</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f7f7f7; }
+    h1 { text-align: center; }
+    form, .pendencias { max-width: 900px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    label { display: block; margin-top: 10px; }
+    input, textarea, select { width: 100%; padding: 8px; margin-top: 4px; border-radius: 5px; border: 1px solid #ccc; }
+    button { margin-top: 15px; padding: 10px 20px; border: none; background-color: #007bff; color: white; border-radius: 5px; cursor: pointer; }
+    .card { background: #e9f1ff; border-left: 5px solid #007bff; margin-bottom: 10px; padding: 10px; border-radius: 5px; }
+    .resolvido { background: #d4edda; border-left: 5px solid #28a745; }
+  </style>
+</head>
+<body>
+  <h1>Painel de Pendências - Materno-Infantil</h1>
+
+  <form id="formPendencia">
+    <label>Data/Hora</label><input type="datetime-local" id="dataHora">
+    <label>Origem</label><input type="text" id="origem">
+    <label>Solicitante</label><input type="text" id="solicitante">
+    <label>Unidade</label><input type="text" id="unidade">
+    <label>Nome do Paciente</label><input type="text" id="paciente">
+    <label>PRT</label><input type="text" id="prt">
+    <label>Leito</label><input type="text" id="leito">
+    <label>Pendência</label><textarea id="pendencia"></textarea>
+    <label>Prioridade</label><select id="prioridade"><option value="Não">Não</option><option value="Sim">Sim</option></select>
+    <label>Farmacêutico Beira-Leito</label><input type="text" id="farmaceutico">
+    <label>Problema</label><input type="text" id="problema">
+    <label>Causa</label><input type="text" id="causa">
+    <button type="submit">Adicionar Pendência</button>
+  </form>
+
+  <div class="pendencias" id="listaPendencias"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPi9qZb2Ge4BebHy119laWRwPzDVTawmc",
+      authDomain: "comunic-materno.firebaseapp.com",
+      projectId: "comunic-materno",
+      storageBucket: "comunic-materno.firebasestorage.app",
+      messagingSenderId: "928817667541",
+      appId: "1:928817667541:web:cf0e40a4c79ea27944b15c",
+      measurementId: "G-KC220REKWQ"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const form = document.getElementById('formPendencia');
+    const lista = document.getElementById('listaPendencias');
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const dados = {
+        dataHora: form.dataHora.value,
+        origem: form.origem.value,
+        solicitante: form.solicitante.value,
+        unidade: form.unidade.value,
+        paciente: form.paciente.value,
+        prt: form.prt.value,
+        leito: form.leito.value,
+        pendencia: form.pendencia.value,
+        prioridade: form.prioridade.value,
+        farmaceutico: form.farmaceutico.value,
+        problema: form.problema.value,
+        causa: form.causa.value,
+        resolvido: false,
+        resolucao: ""
+      };
+      db.ref('pendencias').push(dados);
+      form.reset();
+    });
+
+    db.ref('pendencias').on('value', (snapshot) => {
+      lista.innerHTML = '';
+      snapshot.forEach((child) => {
+        const dado = child.val();
+        const key = child.key;
+        const card = document.createElement('div');
+        card.className = 'card' + (dado.resolvido ? ' resolvido' : '');
+        card.innerHTML = `
+          <strong>${dado.paciente}</strong> | Leito ${dado.leito} | <em>${dado.unidade}</em><br>
+          <small>${dado.dataHora}</small><br>
+          <strong>Pendência:</strong> ${dado.pendencia}<br>
+          <strong>Solicitante:</strong> ${dado.solicitante} | <strong>Prioridade:</strong> ${dado.prioridade}<br>
+          <strong>Farmacêutico:</strong> ${dado.farmaceutico}<br>
+          ${dado.resolvido ? `<strong>Resolução:</strong> ${dado.resolucao}` : `<textarea id="res_${key}" placeholder="Escreva a resolução..."></textarea><br><button onclick="resolverPendencia('${key}')">Marcar como resolvido</button>`}
+        `;
+        lista.appendChild(card);
+      });
+    });
+
+    function resolverPendencia(key) {
+      const texto = document.getElementById('res_' + key).value;
+      db.ref('pendencias/' + key).update({ resolvido: true, resolucao: texto });
+    }
+  </script>
+</body>
+</html>
